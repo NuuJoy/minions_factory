@@ -5,7 +5,9 @@ import datetime
 
 from flask import Flask, request
 import mysql.connector
+
 import jwt
+from jwt.exceptions import InvalidSignatureError
 
 
 with open('/run/secrets/accounts_auth', 'r') as rfl:
@@ -105,4 +107,38 @@ def login():
         return {
             'status': 'fail',
             'message': 'invalid username or password'
+        }, 401
+
+
+@app.route('/validate', methods=['POST'])
+def validate():
+    auth = request.authorization
+
+    if (auth is None) or (auth.type != 'bearer') or (auth.token is None):
+        return {
+            'status': 'fail',
+            'message': 'invalid authorization attribute'
+        }, 400
+
+    try:
+        claims = jwt.decode(
+            auth.token,
+            JWT_SECRET,
+            algorithms=JWT_ALGORITHM
+        )
+    except InvalidSignatureError:
+        return {
+            'status': 'fail',
+            'message': 'invalid token'
+        }, 401
+
+    if datetime.datetime.utcnow().timestamp() <= claims['exp']:
+        return {
+            'status': 'success',
+            'message': f'welcome {claims["sub"]}'
+        }, 200
+    else:
+        return {
+            'status': 'fail',
+            'message': 'token expired'
         }, 401
