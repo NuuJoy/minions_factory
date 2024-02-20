@@ -16,7 +16,10 @@ services:
       MYSQL_DBNAME: minifac_db
     secrets:
       - mysql_auth
+      - accounts_auth
 
 secrets:
   mysql_auth:
     file: mysql_auth.secret
+  accounts_auth:
+    file: accounts_auth.secret
