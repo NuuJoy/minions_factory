@@ -2,6 +2,7 @@
 
 import os
 import datetime
+from threading import Lock
 
 from flask import Flask, request
 import mysql.connector
@@ -14,15 +15,17 @@ with open('/run/secrets/accounts_auth', 'r') as rfl:
     JWT_ALGORITHM, JWT_SECRET = rfl.read().split()
 
 
-class MySQL_Connect():
+class MySQL_Connection():
     def __init__(self):
         self.host = os.getenv('MYSQL_HOST')
         self.port = os.getenv('MYSQL_PORT')
         self.dbname = os.getenv('MYSQL_DBNAME')
         with open('/run/secrets/mysql_auth', 'r') as rfl:
             self.user, self.pswd = rfl.read().split()
+        self.lock = Lock()
 
     def __enter__(self):
+        self.lock.acquire()
         self._conn = mysql.connector.connect(
             host=self.host,
             port=self.port,
@@ -34,9 +37,10 @@ class MySQL_Connect():
 
     def __exit__(self, *args):
         self._conn.close()
+        self.lock.release()
 
 
-mysql_connect = MySQL_Connect()
+mysql_connect = MySQL_Connection()
 
 
 app = Flask(__name__)
@@ -73,15 +77,15 @@ def login():
                     WHERE
                         username = '{auth.username}'
                     ;''')
-                resp = curs.fetchall()
+                resp = curs.fetchone()
     except Exception:
         return {
             'status': 'fail',
             'message': 'bad database connection'
         }, 500
 
-    if (len(resp) == 1) and (len(resp[0]) == 2):
-        db_username, db_password = resp[0]
+    if resp:
+        db_username, db_password = resp
     else:
         return {
             'status': 'fail',
@@ -135,10 +139,34 @@ def validate():
     if datetime.datetime.utcnow().timestamp() <= claims['exp']:
         return {
             'status': 'success',
-            'message': f'welcome {claims["sub"]}'
+            'message': f'welcome {claims["sub"]}',
+            'claims': claims
         }, 200
     else:
         return {
             'status': 'fail',
             'message': 'token expired'
         }, 401
+
+
+@app.route('/get_account_info', methods=['GET'])
+def get_account_info():
+    validation, statuscode = validate()
+    if validation['status'] == 'success':
+        username = validation['claims']['sub']
+        with mysql_connect as conn:
+            with conn.cursor() as curs:
+                curs.execute(
+                    f'''
+                    SELECT
+                        CustomerName, Credit
+                    FROM
+                        minifac_db.accounts
+                    WHERE
+                        username = '{username}'
+                    ;''')
+                resp = curs.fetchone()
+        name, credit = resp
+        return {'name': name, 'credit': credit}, 200
+    else:
+        return validation, statuscode
