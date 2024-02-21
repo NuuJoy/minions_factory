@@ -104,7 +104,7 @@ def login():
         return {
             'status': 'success',
             'message': 'user login successfully',
-            'auth_token': auth_token}, 200
+            'token': auth_token}, 200
     else:
         return {
             'status': 'fail',
