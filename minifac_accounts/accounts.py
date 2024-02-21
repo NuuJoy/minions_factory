@@ -70,12 +70,9 @@ def login():
                 # check database connection
                 curs.execute(
                     f'''
-                    SELECT
-                        username, password
-                    FROM
-                        minifac_db.accounts
-                    WHERE
-                        username = '{auth.username}'
+                    SELECT username, password
+                    FROM minifac_db.accounts
+                    WHERE username = '{auth.username}'
                     ;''')
                 resp = curs.fetchone()
     except Exception:
@@ -114,7 +111,7 @@ def login():
         }, 401
 
 
-@app.route('/validate', methods=['POST'])
+@app.route('/validate', methods=['GET'])
 def validate():
     auth = request.authorization
 
@@ -149,21 +146,32 @@ def validate():
         }, 401
 
 
-@app.route('/get_account_info', methods=['GET'])
-def get_account_info():
+@app.route('/info', methods=['GET'])
+def info():
     validation, statuscode = validate()
     if validation['status'] == 'success':
         username = validation['claims']['sub']
+        keymap = {
+            'name': 'CustomerName',
+            'credit': 'Credit'
+        }
+        request_cols = []
+        try:
+            for col in request.args.to_dict()['cols'].split(','):
+                if col in keymap:
+                    request_cols.append(keymap[col])
+        except Exception:
+            pass
+        if not request_cols:
+            return {}, 200
+
         with mysql_connect as conn:
             with conn.cursor() as curs:
                 curs.execute(
                     f'''
-                    SELECT
-                        CustomerName, Credit
-                    FROM
-                        minifac_db.accounts
-                    WHERE
-                        username = '{username}'
+                    SELECT {','.join(request_cols)}
+                    FROM minifac_db.accounts
+                    WHERE username = '{username}'
                     ;''')
                 resp = curs.fetchone()
         name, credit = resp
