@@ -6,7 +6,7 @@ from threading import Lock
 from decimal import Decimal
 from functools import wraps
 
-from flask import Flask, request
+from flask import Flask, request, make_response
 import mysql.connector
 
 import jwt
@@ -94,18 +94,25 @@ def login():
     if (db_username == auth.username) and (db_password == auth.password):
         iat = datetime.datetime.utcnow()
         exp = iat + datetime.timedelta(hours=12)
-        auth_token = jwt.encode(
+        resp = make_response(
             {
-                'sub': auth.username,
-                'exp': exp.timestamp()
-            },
-            JWT_SECRET,
-            algorithm=JWT_ALGORITHM
+                'status': 'success',
+                'message': 'user login successfully'
+            }, 200
         )
-        return {
-            'status': 'success',
-            'message': 'user login successfully',
-            'token': auth_token}, 200
+        resp.set_cookie(
+            'token',
+            jwt.encode(
+                {
+                    'sub': auth.username,
+                    'exp': exp.timestamp()
+                },
+                JWT_SECRET,
+                algorithm=JWT_ALGORITHM
+            ),
+            httponly=True
+        )
+        return resp
     else:
         return {
             'status': 'fail',
@@ -116,15 +123,14 @@ def login():
 def with_validation(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        auth = request.authorization
-        if (auth is None) or (auth.type != 'bearer') or (auth.token is None):
+        if not (token := request.cookies.get('token')):
             return {
                 'status': 'fail',
-                'message': 'invalid authorization attribute'
-            }, 400
+                'message': 'token not found'
+            }, 401
         try:
             claims = jwt.decode(
-                auth.token,
+                token,
                 JWT_SECRET,
                 algorithms=JWT_ALGORITHM
             )
