@@ -184,16 +184,7 @@ def info(claims):
     return {'name': name, 'credit': credit}, 200
 
 
-@app.route('/charge', methods=['PATCH'])
-@with_validation
-def charge(claims):
-    amount = Decimal(request.args.to_dict()['amount'])
-    if amount <= 0:
-        return {
-            'status': 'fail',
-            'message': 'not support negative amount value'
-        }, 400
-    username = claims['sub']
+def change_to_credit(username, amount):
     with mysql_connect as conn:
         with conn.cursor() as curs:
             curs.execute(
@@ -205,7 +196,7 @@ def charge(claims):
             )
             credit = Decimal(curs.fetchone()[0])
             if credit >= amount:
-                newcredit = credit - amount
+                newcredit = credit + amount
                 curs.execute(
                     f'''
                     UPDATE minifac_db.accounts
@@ -223,3 +214,27 @@ def charge(claims):
                     'status': 'fail',
                     'message': 'not enough credit',
                 }, 409
+
+
+@app.route('/charge', methods=['PATCH'])
+@with_validation
+def charge(claims):
+    amount = Decimal(request.args.to_dict()['amount'])
+    if amount <= 0:
+        return {
+            'status': 'fail',
+            'message': 'not support negative amount value'
+        }, 400
+    return change_to_credit(claims['sub'], -amount)
+
+
+@app.route('/refund', methods=['PATCH'])
+@with_validation
+def refund(claims):
+    amount = Decimal(request.args.to_dict()['amount'])
+    if amount <= 0:
+        return {
+            'status': 'fail',
+            'message': 'not support negative amount value'
+        }, 400
+    return change_to_credit(claims['sub'], amount)
