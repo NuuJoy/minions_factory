@@ -2,43 +2,17 @@
 
 import os
 import datetime
-from threading import Lock
-from functools import wraps
 
 from flask import Flask, request, make_response
-import mysql.connector
 
 import jwt
-from jwt.exceptions import InvalidSignatureError
+
+from minifac_utils import MySQL_Connection, with_validation
 
 
 with open('/run/secrets/accounts_auth', 'r') as rfl:
-    JWT_ALGORITHM, JWT_SECRET = rfl.read().split()
-
-
-class MySQL_Connection():
-    def __init__(self):
-        self.host = os.getenv('MYSQL_HOST')
-        self.port = os.getenv('MYSQL_PORT')
-        self.dbname = os.getenv('MYSQL_DBNAME')
-        with open('/run/secrets/mysql_auth', 'r') as rfl:
-            self.user, self.pswd = rfl.read().split()
-        self.lock = Lock()
-
-    def __enter__(self):
-        self.lock.acquire()
-        self._conn = mysql.connector.connect(
-            host=self.host,
-            port=self.port,
-            user=self.user,
-            passwd=self.pswd,
-            database=self.dbname,
-        )
-        return self._conn
-
-    def __exit__(self, *args):
-        self._conn.close()
-        self.lock.release()
+    for name in ('JWT_ALGORITHM', 'JWT_SECRET'):
+        os.environ[name] = rfl.readline().strip()
 
 
 mysql_connect = MySQL_Connection()
@@ -106,8 +80,8 @@ def login():
                     'sub': auth.username,
                     'exp': exp.timestamp()
                 },
-                JWT_SECRET,
-                algorithm=JWT_ALGORITHM
+                key=os.environ['JWT_SECRET'],
+                algorithm=os.environ['JWT_ALGORITHM']
             ),
             httponly=True
         )
@@ -117,36 +91,6 @@ def login():
             'status': 'fail',
             'message': 'invalid username or password'
         }, 401
-
-
-def with_validation(func):
-    @wraps(func)
-    def decorated_function(*args, **kwargs):
-        if not (token := request.cookies.get('token')):
-            return {
-                'status': 'fail',
-                'message': 'token not found'
-            }, 401
-        try:
-            claims = jwt.decode(
-                token,
-                JWT_SECRET,
-                algorithms=JWT_ALGORITHM
-            )
-        except InvalidSignatureError:
-            return {
-                'status': 'fail',
-                'message': 'invalid token'
-            }, 401
-
-        if datetime.datetime.utcnow().timestamp() <= claims['exp']:
-            return func(claims)
-        else:
-            return {
-                'status': 'fail',
-                'message': 'token expired'
-            }, 401
-    return decorated_function
 
 
 @app.route('/validate', methods=['GET'])
