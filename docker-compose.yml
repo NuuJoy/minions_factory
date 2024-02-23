@@ -1,13 +1,29 @@
 version: '3.4'
 
 services:
+  authentication:
+    image: minifac_authentication
+    build:
+      context: .
+      dockerfile: ./minifac_authentication/Dockerfile
+    ports:
+      - 5010:5010
+    volumes:
+      - ${PWD}/minifac_authentication/authentication.py:/app/authentication.py
+    environment:
+      MYSQL_HOST: host.docker.internal
+      MYSQL_PORT: 3306
+      MYSQL_DBNAME: minifac_db
+    secrets:
+      - mysql_auth
+      - accounts_auth
   accounts:
     image: minifac_accounts
     build:
       context: .
       dockerfile: ./minifac_accounts/Dockerfile
     ports:
-      - 5010:5010
+      - 5020:5020
     volumes:
       - ${PWD}/minifac_accounts/accounts.py:/app/accounts.py
     environment:

@@ -56,70 +56,6 @@ def index():
     }, 200
 
 
-@app.route('/login', methods=['POST'])
-def login():
-    auth = request.authorization
-
-    if (auth is None) or (auth.username is None) or (auth.password is None):
-        return {
-            'status': 'fail',
-            'message': 'invalid authorization attribute'
-        }, 400
-
-    try:
-        with mysql_connect as conn:
-            with conn.cursor() as curs:
-                # check database connection
-                curs.execute(
-                    f'''
-                    SELECT username, password
-                    FROM minifac_db.accounts
-                    WHERE username = '{auth.username}'
-                    ;''')
-                resp = curs.fetchone()
-    except Exception:
-        return {
-            'status': 'fail',
-            'message': 'bad database connection'
-        }, 500
-
-    if resp:
-        db_username, db_password = resp
-    else:
-        return {
-            'status': 'fail',
-            'message': 'invalid username or password'
-        }, 401
-
-    if (db_username == auth.username) and (db_password == auth.password):
-        iat = datetime.datetime.utcnow()
-        exp = iat + datetime.timedelta(hours=12)
-        resp = make_response(
-            {
-                'status': 'success',
-                'message': 'user login successfully'
-            }, 200
-        )
-        resp.set_cookie(
-            'token',
-            jwt.encode(
-                {
-                    'sub': auth.username,
-                    'exp': exp.timestamp()
-                },
-                JWT_SECRET,
-                algorithm=JWT_ALGORITHM
-            ),
-            httponly=True
-        )
-        return resp
-    else:
-        return {
-            'status': 'fail',
-            'message': 'invalid username or password'
-        }, 401
-
-
 def with_validation(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -148,15 +84,6 @@ def with_validation(func):
                 'message': 'token expired'
             }, 401
     return decorated_function
-
-
-@app.route('/validate', methods=['GET'])
-@with_validation
-def validate(claims):
-    return {
-        'status': 'success',
-        'message': f'token valid: {claims}'
-    }, 200
 
 
 @app.route('/info', methods=['GET'])
