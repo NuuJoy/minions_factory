@@ -94,3 +94,10 @@ def login():
             return resp
         else:
             return redirect('/login?error=invalid username or password')
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    resp = make_response(redirect('/login'))
+    resp.set_cookie('token', httponly=True)
+    return resp
