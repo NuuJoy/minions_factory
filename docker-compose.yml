@@ -57,6 +57,16 @@ services:
       - mysql_auth
       - accounts_auth
 
+  customer:
+    image: minifac_customer
+    build:
+      context: ./minifac_customer
+      dockerfile: ./Dockerfile
+    ports:
+      - 5050:5050
+    volumes:
+      - ${PWD}/minifac_customer/customer.py:/app/customer.py
+
 secrets:
   mysql_auth:
     file: mysql_auth.secret
