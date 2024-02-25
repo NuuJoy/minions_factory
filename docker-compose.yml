@@ -1,6 +1,7 @@
 version: '3.4'
 
 services:
+
   authentication:
     image: minifac_authentication
     build:
@@ -9,8 +10,9 @@ services:
     ports:
       - 5010:5010
     volumes:
-      - ${PWD}/minifac_authentication/authentication.py:/app/authentication.py
       - ${PWD}/minifac_utils.py:/app/minifac_utils.py
+      - ${PWD}/minifac_authentication/authentication.py:/app/authentication.py
+      - ${PWD}/minifac_authentication/templates:/app/templates
     environment:
       MYSQL_HOST: host.docker.internal
       MYSQL_PORT: 3306
@@ -18,6 +20,7 @@ services:
     secrets:
       - mysql_auth
       - accounts_auth
+
   accounts:
     image: minifac_accounts
     build:
@@ -26,8 +29,8 @@ services:
     ports:
       - 5020:5020
     volumes:
-      - ${PWD}/minifac_accounts/accounts.py:/app/accounts.py
       - ${PWD}/minifac_utils.py:/app/minifac_utils.py
+      - ${PWD}/minifac_accounts/accounts.py:/app/accounts.py
     environment:
       MYSQL_HOST: host.docker.internal
       MYSQL_PORT: 3306
