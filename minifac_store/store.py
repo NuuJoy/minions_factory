@@ -1,9 +1,8 @@
 
 
 import os
-from decimal import Decimal
 
-from flask import Flask, request
+from flask import Flask
 
 from minifac_utils import MySQL_Connection, with_validation
 
