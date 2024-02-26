@@ -2,7 +2,7 @@
 
 import os
 
-from flask import Flask, request, render_template, redirect
+from flask import Flask, request, make_response, render_template, redirect
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -21,7 +21,6 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     token_check = with_validation(lambda _: True)()
-    print('token_check:', token_check)
     if token_check is not True:
         if request.method == 'POST':
             username = request.form['username']
@@ -42,3 +41,21 @@ def index():
             return render_template('login.html')
     else:
         return render_template('customer_purchase_order.html')
+
+
+@app.route('/get_page_info', methods=['GET'])
+def get_page_info():
+    page_info = {}
+    token = request.cookies.get('token')
+    account_resp = requests.get(
+        url='http://host.docker.internal:5020/info',
+        cookies={'token': token}
+    )
+    page_info.update(account_resp.json())
+
+    store_resp = requests.get(
+        url='http://host.docker.internal:5030/allitems',
+        cookies={'token': token}
+    )
+    page_info.update({'allitems': store_resp.json()})
+    return page_info, 200
