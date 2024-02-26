@@ -6,7 +6,48 @@
     <title>Document</title>
   </head>
   <body>
-    <h1>Customer purchase order</h1>
+    <h1>Welcome to Customer Portal</h1>
+    <h2>Customer infomations</h2>
+    <div id="customer_info">None</div>
+    <h2>All items in our store</h2>
+    <div id="items_list">
+      <div>
+        Head part:
+        <select
+          id="head_select"
+          name="Head"
+          onChange="calculate_price()"
+        ></select>
+      </div>
+      <div>
+        Body part:
+        <select
+          id="body_select"
+          name="Body"
+          onChange="calculate_price()"
+        ></select>
+      </div>
+      <div>
+        Arms part:
+        <select
+          id="arms_select"
+          name="Arms"
+          onChange="calculate_price()"
+        ></select>
+      </div>
+      <div>
+        Legs part:
+        <select
+          id="legs_select"
+          name="Legs"
+          onChange="calculate_price()"
+        ></select>
+      </div>
+    </div>
+    <h2>Total price</h2>
+    <div id="price_calculation"></div>
+    <div><br /></div>
+    <div><button onclick="refresh_page()">Refresh</button></div>
     <script src="static/js/customer_purchase_order.js"></script>
   </body>
 </html>

@@ -34,7 +34,7 @@ def allitems(claims):
         with conn.cursor() as curs:
             curs.execute(
                 '''
-                SELECT Part, Color, Price
+                SELECT ID, Part, Color, Price
                 FROM minifac_db.pricelist
                 ;'''
             )

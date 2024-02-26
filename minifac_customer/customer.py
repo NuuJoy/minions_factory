@@ -48,7 +48,7 @@ def get_page_info():
     page_info = {}
     token = request.cookies.get('token')
     account_resp = requests.get(
-        url='http://host.docker.internal:5020/info',
+        url='http://host.docker.internal:5020/info?cols=name,credit',
         cookies={'token': token}
     )
     page_info.update(account_resp.json())
