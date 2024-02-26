@@ -1,11 +1,44 @@
 
 
-from flask import Flask, render_template
+import os
+
+from flask import Flask, request, render_template, redirect
+
+import requests
+from requests.auth import HTTPBasicAuth
+
+from minifac_utils import with_validation
+
+
+with open('/run/secrets/accounts_auth', 'r') as rfl:
+    for name in ('JWT_ALGORITHM', 'JWT_SECRET'):
+        os.environ[name] = rfl.readline().strip()
 
 
 app = Flask(__name__)
 
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('customer_purchase_order.html')
+    token_check = with_validation(lambda _: True)()
+    print('token_check:', token_check)
+    if token_check is not True:
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
+            login_resp = requests.post(
+                'http://host.docker.internal:5010/login',
+                auth=HTTPBasicAuth(username, password)
+            )
+            if login_resp.status_code != 200:
+                error = login_resp.json()['message']
+                return render_template('login.html', error=error)
+            else:
+                token = login_resp.cookies.get('token')
+                resp = redirect('/')
+                resp.set_cookie('token', token, httponly=True)
+                return resp
+        else:
+            return render_template('login.html')
+    else:
+        return render_template('customer_purchase_order.html')
