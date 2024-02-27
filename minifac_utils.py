@@ -9,7 +9,7 @@ from flask import request
 import mysql.connector
 
 import jwt
-from jwt.exceptions import InvalidSignatureError
+from jwt.exceptions import InvalidSignatureError, ExpiredSignatureError
 
 
 class MySQL_Connection():
@@ -56,12 +56,11 @@ def with_validation(func):
                 'status': 'fail',
                 'message': 'invalid token'
             }, 401
-
-        if datetime.datetime.utcnow().timestamp() <= claims['exp']:
-            return func(claims)
-        else:
+        except ExpiredSignatureError:
             return {
                 'status': 'fail',
                 'message': 'token expired'
             }, 401
+
+        return func(claims)
     return decorated_function

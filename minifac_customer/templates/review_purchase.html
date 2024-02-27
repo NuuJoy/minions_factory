@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Purchase review</h1>
+    <div>
+      {% for textline in purchase_info_text %}
+      <p>{{textline}}</p>
+      {% endfor %}
+    </div>
+    {% if enough_credit %}
+    <form action="/make_purchase" method="post">
+      <button type="submit" name="order" value="{{order}}">
+        Make Purchase
+      </button>
+    </form>
+    {% endif %}
+  </body>
+</html>
