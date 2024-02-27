@@ -11,120 +11,181 @@ function query_page_info() {
 }
 
 
-function refresh_customer_info() {
-    let customer_info = ''
-    customer_info += 'Customer Name: ' + page_info['name'] + '<br>'
-    customer_info += 'Customer Credit: ' + page_info['credit']
-    document.getElementById('customer_info').innerHTML = customer_info
-}
+class User_Info_Layout_Class {
+    constructor (user_info_layout_id) {
+        this.layout = document.getElementById(user_info_layout_id)
 
+        this.header_elem = document.createElement('h2')
+        this.name_elem = document.createElement('p')
+        this.credit_elem = document.createElement('p')
 
-function get_selector(part_name) {
-    return document.getElementById(part_name.toLowerCase() + '_select')
-}
-
-
-function clear_selector(part_name) {
-    let select = get_selector(part_name)
-    select.replaceChildren()
-    let opt = document.createElement('option')
-    opt.value = null
-    opt.innerHTML = '---- Please select ----'
-    select.appendChild(opt)
-}
-
-
-function clear_all_selectors() {
-    for (let part_name of ['head', 'body', 'arms', 'legs']) {
-        clear_selector(part_name)
+        this.layout.appendChild(this.header_elem)
+        this.layout.appendChild(this.name_elem)
+        this.layout.appendChild(this.credit_elem)
     }
+
+    set_header (header) {
+        this.header_elem.innerHTML = header
+    }
+
+    set_name (name) {
+        this.name_elem.innerHTML = `Customer Name: ${name}`
+    }
+
+    set_credit (credit) {
+        this.credit_elem.innerHTML = `Customer Credit: ${credit}`
+    }
+}
+
+
+class Selector_Class {
+    constructor (parent, label) {
+        this.panel = document.createElement('div')
+        this.label = document.createElement('span')
+        this.selector = document.createElement('select')
+
+        this.label.innerHTML = label
+
+        this.panel.appendChild(this.label)
+        this.panel.appendChild(this.selector)
+        parent.appendChild(this.panel)
+
+        this.options = []
+    }
+
+    add_option (label, value) {
+        let option
+        if (this.selector.options.length == 0) {
+            option = document.createElement('option')
+            option.value = null
+            option.label = '---- Please select ----'
+            this.selector.appendChild(option)
+        }
+        option = document.createElement('option')
+        option.value = value
+        option.label = label
+        this.selector.appendChild(option)
+    }
+
+    clear_option () {
+        this.selector.replaceChildren()
+    }
+}
+
+
+class Store_Items_Layout_Class {
+    constructor (store_items_layout_id) {
+        this.layout = document.getElementById(store_items_layout_id)
+        this.header_elem = document.createElement('h2')
+        this.layout.appendChild(this.header_elem)
+
+        this.head_selector = new Selector_Class(this.layout, 'HEAD part: ')
+        this.body_selector = new Selector_Class(this.layout, 'BODY part: ')
+        this.arms_selector = new Selector_Class(this.layout, 'ARMS part: ')
+        this.legs_selector = new Selector_Class(this.layout, 'LEGS part: ')
+
+        this.selectors = [
+            this.head_selector.selector,
+            this.body_selector.selector,
+            this.arms_selector.selector,
+            this.legs_selector.selector
+        ]
+
+        let cart_panel = document.createElement('div')
+        this.layout.appendChild(cart_panel)
+
+        this.show_price = document.createElement('span')
+        cart_panel.appendChild(this.show_price)
+
+        this.add_to_cart_button = document.createElement('button')
+        this.add_to_cart_button.textContent = 'Add to Cart'
+        this.add_to_cart_button.disabled = true
+        cart_panel.appendChild(this.add_to_cart_button)
+    }
+
+    set_header (header) {
+        this.header_elem.innerHTML = header
+    }
+
+    clear_items () {
+        this.head_selector.clear_option()
+        this.body_selector.clear_option()
+        this.arms_selector.clear_option()
+        this.legs_selector.clear_option()
+        this.add_to_cart_button.disabled = true
+        this.show_price.innerHTML = ''
+    }
+
+    add_items (items_list) {
+        this.items_list = items_list
+        for (let item of this.items_list) {
+            let selector
+            switch(item[1].toLowerCase()) {
+                case 'head':
+                    selector = this.head_selector
+                    break;
+                case 'body':
+                    selector = this.body_selector
+                    break;
+                case 'arms':
+                    selector = this.arms_selector
+                    break;
+                case 'legs':
+                    selector = this.legs_selector
+                    break;
+            }
+            selector.add_option(`${item[2]} (${item[3]} Baht)`, item)
+        }
+    }
+
+    calculate_price () {
+        let have_null = false
+        let price_sum = 0
+        for (let selector of this.selectors) {
+            let values = selector.value
+            if (values != 'null') {
+                price_sum += Number(selector.value.split(',')[3])
+            } else {
+                have_null = true
+            }
+        }
+        if (have_null) {
+            this.add_to_cart_button.disabled = true
+        } else {
+            this.add_to_cart_button.disabled = false
+        }
+        this.show_price.innerHTML = `Unit price: ${price_sum} Baht`
+    }
+}
+
+
+var user_info_layout = new User_Info_Layout_Class('user_info_layout')
+user_info_layout.set_header('Customer infomations')
+
+var store_items_layout = new Store_Items_Layout_Class('store_items_layout')
+store_items_layout.set_header('All items in our store')
+
+
+function calculate_sum_price() {
+    store_items_layout.calculate_price()
+}
+
+
+for (let selector of store_items_layout.selectors) {
+    console.log('selector: ', selector)
+    selector.addEventListener("change", calculate_sum_price);
 }
 
 
 function refresh_page() {
     query_page_info()
-    refresh_customer_info()
-    clear_all_selectors()
-    let opt
-    for (let item of page_info['allitems']) {
-        let id = item[0]
-        let part_name = item[1]
-        let color = item[2]
-        let price = item[3]
-        opt = document.createElement('option')
-        opt.value = id
-        opt.innerHTML = color + ' (' + price + ' Bath)'
-        get_selector(part_name).appendChild(opt)
-    }
-    clear_price_calculation()
+
+    user_info_layout.set_name(page_info['name'])
+    user_info_layout.set_credit(page_info['credit'])
+
+    store_items_layout.clear_items()
+    store_items_layout.add_items(page_info['allitems'])
 }
 
-
-function get_value_by_id(id, index) {
-    for (let item of page_info['allitems']) {
-        if (item[0] == id) {
-            return item[index]
-        }
-    }
-}
-
-
-function get_selected_item_id(part_name) {
-    return get_selector(part_name).value
-}
-
-
-function get_selected_item_color(part_name) {
-    return get_value_by_id(get_selected_item_id(part_name), 2)
-}
-
-
-function get_selected_item_price(part_name) {
-    return get_value_by_id(get_selected_item_id(part_name), 3)
-}
-
-
-function clear_price_calculation() {
-    let price_cal = document.getElementById('price_calculation')
-    price_cal.replaceChildren()
-}
-
-
-function calculate_price() {
-    clear_price_calculation()
-
-    let total_price = 0.0
-    let id
-    let color
-    let price
-    let tr
-    let td
-    let tbl = document.createElement('table')
-    for (let part_name of ['Head', 'Body', 'Arms', 'Legs']) {
-        id = get_selected_item_id(part_name)
-        if (id != 'null') {
-            tr = tbl.insertRow()
-
-            td = tr.insertCell()
-            td.innerHTML = part_name
-
-            color = get_selected_item_color(part_name)
-            td = tr.insertCell()
-            td.innerHTML = color
-
-            price = get_selected_item_price(part_name)
-            total_price += Number(price)
-            td = tr.insertCell()
-            td.innerHTML = price
-        }
-    }
-
-    let price_cal = document.getElementById('price_calculation')
-    price_cal.appendChild(tbl)
-
-    let total_price_text = document.createElement('p')
-    total_price_text.innerHTML = 'Total price: ' + total_price
-    price_cal.appendChild(total_price_text)
-}
 
 refresh_page()
