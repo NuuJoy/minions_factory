@@ -28,7 +28,7 @@ def index():
             username = request.form['username']
             password = request.form['password']
             login_resp = requests.post(
-                'http://host.docker.internal:5010/login',
+                'http://authentication:8000/login',
                 auth=HTTPBasicAuth(username, password)
             )
             if login_resp.status_code != 200:
@@ -51,13 +51,13 @@ def get_page_info(claims):
     page_info = {}
     token = request.cookies.get('token')
     account_resp = requests.get(
-        url='http://host.docker.internal:5020/info?cols=name,credit',
+        url='http://accounts:8000/info?cols=name,credit',
         cookies={'token': token}
     )
     page_info.update(account_resp.json())
 
     store_resp = requests.get(
-        url='http://host.docker.internal:5030/allitems',
+        url='http://store:8000/allitems',
         cookies={'token': token}
     )
     page_info.update({'allitems': store_resp.json()})

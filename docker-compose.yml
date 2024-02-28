@@ -7,8 +7,6 @@ services:
     build:
       context: ./minifac_authentication
       dockerfile: ./Dockerfile
-    ports:
-      - 5010:5010
     volumes:
       - ${PWD}/minifac_utils.py:/app/minifac_utils.py
       - ${PWD}/minifac_authentication/authentication.py:/app/authentication.py
@@ -26,8 +24,6 @@ services:
     build:
       context: ./minifac_accounts
       dockerfile: ./Dockerfile
-    ports:
-      - 5020:5020
     volumes:
       - ${PWD}/minifac_utils.py:/app/minifac_utils.py
       - ${PWD}/minifac_accounts/accounts.py:/app/accounts.py
@@ -44,8 +40,6 @@ services:
     build:
       context: ./minifac_store
       dockerfile: ./Dockerfile
-    ports:
-      - 5030:5030
     volumes:
       - ${PWD}/minifac_store/store.py:/app/store.py
       - ${PWD}/minifac_utils.py:/app/minifac_utils.py
