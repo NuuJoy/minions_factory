@@ -20,6 +20,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
+    print('index')
     return {
         'status': 'success',
         'message': 'welcome to store api'
@@ -29,6 +30,7 @@ def index():
 @app.route('/allitems', methods=['GET'])
 @with_validation
 def allitems(claims):
+    print('allitems')
     with mysql_connect as conn:
         with conn.cursor() as curs:
             curs.execute(

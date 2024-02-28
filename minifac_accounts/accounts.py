@@ -1,9 +1,8 @@
 
 
 import os
-from decimal import Decimal
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 from minifac_utils import MySQL_Connection, with_validation
 
@@ -21,44 +20,33 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
-    return {
+    print('index')
+    return jsonify({
         'status': 'success',
         'message': 'welcome to accounts api'
-    }, 200
+    }), 200
 
 
 @app.route('/info', methods=['GET'])
 @with_validation
 def info(claims):
     username = claims['sub']
-    keymap = {
-        'name': 'CustomerName',
-        'credit': 'Credit'
-    }
-    request_cols = []
-    try:
-        for col in request.args.to_dict()['cols'].split(','):
-            if col in keymap:
-                request_cols.append(keymap[col])
-    except Exception:
-        pass
-    if not request_cols:
-        return {}, 200
-
+    print('info, username:', username)
     with mysql_connect as conn:
         with conn.cursor() as curs:
             curs.execute(
                 f'''
-                SELECT {','.join(request_cols)}
+                SELECT CustomerName, Credit
                 FROM minifac_db.accounts
                 WHERE username = '{username}'
                 ;''')
             resp = curs.fetchone()
     name, credit = resp
-    return {'name': name, 'credit': credit}, 200
+    return jsonify({'name': name, 'credit': credit}), 200
 
 
 def change_to_credit(username, amount):
+    print('change_to_credit, username:', username, ', amount:', amount)
     with mysql_connect as conn:
         with conn.cursor() as curs:
             curs.execute(
@@ -68,8 +56,8 @@ def change_to_credit(username, amount):
                 WHERE username = '{username}'
                 ;'''
             )
-            credit = Decimal(curs.fetchone()[0])
-            if credit >= amount:
+            credit = int(curs.fetchone()[0])
+            if credit + amount >= 0:
                 newcredit = credit + amount
                 curs.execute(
                     f'''
@@ -79,36 +67,38 @@ def change_to_credit(username, amount):
                     ;
                     COMMIT;'''
                 )
-                return {
+                return jsonify({
                     'status': 'success',
                     'message': 'purchase successfully',
-                }, 200
+                }), 200
             else:
-                return {
+                return jsonify({
                     'status': 'fail',
                     'message': 'not enough credit',
-                }, 409
+                }), 409
 
 
 @app.route('/charge', methods=['PATCH'])
 @with_validation
 def charge(claims):
-    amount = Decimal(request.args.to_dict()['amount'])
+    amount = int(request.json['amount'])
+    print('charge, amount:', amount)
     if amount <= 0:
-        return {
+        return jsonify({
             'status': 'fail',
             'message': 'not support negative amount value'
-        }, 400
+        }), 400
     return change_to_credit(claims['sub'], -amount)
 
 
 @app.route('/refund', methods=['PATCH'])
 @with_validation
 def refund(claims):
-    amount = Decimal(request.args.to_dict()['amount'])
+    amount = int(request.json['amount'])
+    print('refund, amount:', amount)
     if amount <= 0:
-        return {
+        return jsonify({
             'status': 'fail',
             'message': 'not support negative amount value'
-        }, 400
+        }), 400
     return change_to_credit(claims['sub'], amount)

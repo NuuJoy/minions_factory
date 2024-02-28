@@ -14,10 +14,10 @@
     </div>
     {% if enough_credit %}
     <form action="/make_purchase" method="post">
-      <button type="submit" name="order" value="{{order}}">
+      <button type="submit" name="orders" value="{{orders}}">
         Make Purchase
       </button>
     </form>
-    {% endif %}
+    {% else %} Not enough credit for this purchase {% endif %}
   </body>
 </html>

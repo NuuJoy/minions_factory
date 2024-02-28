@@ -250,7 +250,7 @@ function goto_review_purchase() {
 
     let hiddenField = document.createElement('input')
     hiddenField.type = 'hidden'
-    hiddenField.name = 'order'
+    hiddenField.name = 'orders'
     hiddenField.value = JSON.stringify(shopping_cart.cart_items)
     form.appendChild(hiddenField)
 

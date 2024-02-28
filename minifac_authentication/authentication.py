@@ -3,7 +3,7 @@
 import os
 import datetime
 
-from flask import Flask, request, make_response
+from flask import Flask, request, jsonify
 
 import jwt
 
@@ -23,6 +23,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
+    print('index')
     body, status = with_validation(lambda claims: (claims, 200))()
     if status == 200:
         username = body['sub']
@@ -36,10 +37,11 @@ def index():
 def login():
     username = request.authorization.username
     password = request.authorization.password
+    print('login, username:', username, ', password:', password)
     if (username is None) or (password is None):
-        return {
+        return jsonify({
             'status': 'fail', 'message': 'invalid login method'
-        }, 400
+        }), 400
 
     try:
         with mysql_connect as conn:
@@ -52,24 +54,23 @@ def login():
                     ;''')
                 resp = curs.fetchone()
     except Exception:
-        return {
+        return jsonify({
             'status': 'fail', 'message': 'bad database connection'
-        }, 503
+        }), 503
 
     if resp:
         db_username, db_password = resp
     else:
-        return {
+        return jsonify({
             'status': 'fail', 'message': 'invalid username or password'
-        }, 401
+        }), 401
 
     if (db_username == username) and (db_password == password):
         iat = datetime.datetime.utcnow()
         exp = iat + datetime.timedelta(minutes=5)
-        resp = make_response()
-        resp.content = {
+        resp = jsonify({
             'status': 'success', 'message': 'login successfully'
-        }
+        })
         resp.set_cookie(
             'token',
             jwt.encode(
@@ -84,13 +85,14 @@ def login():
         )
         return resp
     else:
-        return {
+        return jsonify({
             'status': 'fail', 'message': 'invalid username or password'
-        }, 401
+        }), 401
 
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    resp = make_response()
+    print('logout')
+    resp = jsonify()
     resp.set_cookie('token', httponly=True)
     return resp

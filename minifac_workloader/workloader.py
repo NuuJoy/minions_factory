@@ -32,6 +32,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
+    print('index')
     return {
         'status': 'success',
         'message': 'welcome to workloader api'
@@ -43,11 +44,12 @@ def index():
 def add_workorders(claims):
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
     username = claims['sub']
-    orders = request.args.to_dict()['orders']
+    orders = request.json['orders']
     with mysql_connect as conn:
         with conn.cursor() as curs:
             try:
                 for (head_id, body_id, arms_id, legs_id) in orders:
+                    print('add_workorders: create workorder')
                     curs.execute(
                         f'''
                         INSERT
@@ -58,20 +60,22 @@ def add_workorders(claims):
                             )
                         VALUES
                             (
-                                {username},
+                                "{username}",
                                 {head_id}, {body_id}, {arms_id}, {legs_id},
                                 "Create"
                             )
                         ;'''
                     )
+                    print('add_workorders: get order_id')
                     curs.execute(
                         '''
                         SELECT OrderID
-                        FROM minifac_db.workprocess
+                        FROM minifac_db.workorder
                         WHERE Status = "Create"
                         ;'''
                     )
-                    order_id = curs.fetchone()[0]
+                    order_id = curs.fetchall()[-1][0]
+                    print('add_workorders: create workprocess')
                     curs.execute(
                         f'''
                         INSERT
@@ -84,6 +88,7 @@ def add_workorders(claims):
                             )
                         ;'''
                     )
+                print('add_workorders: commit')
                 conn.commit()
 
                 # publish_message(json.dumps([order_id, 'Create', 'Success']))
