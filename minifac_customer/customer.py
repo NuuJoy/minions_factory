@@ -45,6 +45,12 @@ def index():
         return render_template('customer_purchase_order.html')
 
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    resp = requests.post('http://authentication:8000/logout')
+    return 'Logout successfully', resp.status_code, resp.headers.items()
+
+
 @app.route('/get_page_info', methods=['GET'])
 @with_validation
 def get_page_info(claims):

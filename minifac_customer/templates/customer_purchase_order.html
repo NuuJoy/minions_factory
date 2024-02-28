@@ -10,7 +10,10 @@
     <div id="user_info_layout"></div>
     <div id="store_items_layout"></div>
     <div id="shopping_cart"></div>
-    <div><button onclick="refresh_page()">Clear</button></div>
+    <div>
+      <button onclick="refresh_page()">Clear</button>
+      <form action="/logout" method="post"><button>Logout</button></form>
+    </div>
     <script src="static/js/customer_purchase_order.js"></script>
   </body>
 </html>
