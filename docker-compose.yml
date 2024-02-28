@@ -51,6 +51,23 @@ services:
       - mysql_auth
       - accounts_auth
 
+  workloader:
+    image: minifac_workloader
+    build:
+      context: ./minifac_workloader
+      dockerfile: ./Dockerfile
+    volumes:
+      - ${PWD}/minifac_utils.py:/app/minifac_utils.py
+      - ${PWD}/minifac_workloader/workloader.py:/app/workloader.py
+      - ${PWD}/minifac_workloader/process_endpoints.txt:/app/process_endpoints.txt
+    environment:
+      MYSQL_HOST: host.docker.internal
+      MYSQL_PORT: 3306
+      MYSQL_DBNAME: minifac_db
+    secrets:
+      - mysql_auth
+      - accounts_auth
+
   customer:
     image: minifac_customer
     build:
