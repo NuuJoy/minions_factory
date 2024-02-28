@@ -46,7 +46,8 @@ def index():
 
 
 @app.route('/get_page_info', methods=['GET'])
-def get_page_info():
+@with_validation
+def get_page_info(claims):
     page_info = {}
     token = request.cookies.get('token')
     account_resp = requests.get(
@@ -64,9 +65,10 @@ def get_page_info():
 
 
 @app.route('/review_purchase', methods=['POST'])
-def review_purchase():
+@with_validation
+def review_purchase(claims):
     order = json.loads(request.form['order'])
-    resp, status = get_page_info()
+    resp, _ = get_page_info()
     credit = Decimal(resp['credit'])
     allitems = resp['allitems']
 
