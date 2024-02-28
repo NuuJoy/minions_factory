@@ -38,6 +38,7 @@ class MySQL_Connection():
 
 
 def with_validation(func):
+    print('with_validation, func:', func.__name__)
     @wraps(func)
     def decorated_function(*args, **kwargs):
         if not (token := request.cookies.get('token')):
