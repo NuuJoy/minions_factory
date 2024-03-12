@@ -1,11 +1,12 @@
 
 
+from typing import Tuple, Any
 import os
 import time
-# import json
+import json
 
 from flask import Flask, request
-# import requests
+import requests
 
 from minifac_utils import MySQL_Connection, with_validation
 
@@ -15,13 +16,16 @@ with open('/run/secrets/accounts_auth', 'r') as rfl:
         os.environ[name] = rfl.readline().strip()
 
 
-# with open('process_endpoints.txt', 'r') as rfl:
-#     PROCESS_ENDPOINTS = rfl.read().split()
+with open('process_endpoints.txt', 'r') as rfl:
+    PROCESS_ENDPOINTS = rfl.read().split()
 
 
-# def publish_message(message):
-#     for endpoint in PROCESS_ENDPOINTS:
-#         requests.post(url=endpoint + f'?message={message}')
+def publish_message(message: Any) -> None:
+    print(f'publishing message: {message}')
+    for endpoint in PROCESS_ENDPOINTS:
+        print(f'to {endpoint}')
+        requests.post(url=endpoint, json=message)
+    print('publishing message done')
 
 
 mysql_connect = MySQL_Connection()
@@ -88,10 +92,10 @@ def add_workorders(claims):
                             )
                         ;'''
                     )
+                    publish_message([order_id, 'Create', 'Success'])
+
                 print('add_workorders: commit')
                 conn.commit()
-
-                # publish_message(json.dumps([order_id, 'Create', 'Success']))
 
                 return {
                     'status': 'success',
@@ -104,25 +108,35 @@ def add_workorders(claims):
                 }, 401
 
 
-# @app.route('/process_report', methods=['POST'])
-# def process_report():
-#     message = json.loads(request.args.to_dict()['message'])
-#     order_id, process, status, start_time = message
-#     with mysql_connect as conn:
-#         with conn.cursor() as curs:
-#             curs.execute(
-#                 f'''
-#                 INSERT
-#                     minifac_db.workprocess (
-#                         OrderID, Process, Status, StartTime
-#                     )
-#                 VALUES
-#                     ({order_id}, "{process}", "{status}", "{start_time}")
-#                 ;'''
-#             )
-#             conn.commit()
-#     publish_message(json.dumps([order_id, process, status]))
-#     return {
-#         'status': 'success',
-#         'message': 'report successfully',
-#     }, 200
+@app.route('/process_report', methods=['POST'])
+def process_report() -> tuple[dict[str, str], int]:
+    message: Tuple[str, str, str, str] = request.json['message']
+    order_id, process, status, start_time = message
+    with mysql_connect as conn:
+        with conn.cursor() as curs:
+            curs.execute(
+                f'''
+                INSERT
+                    minifac_db.workprocess (
+                        OrderID, Process, Status, StartTime
+                    )
+                VALUES
+                    ({order_id}, "{process}", "{status}", "{start_time}")
+                ;'''
+            )
+            curs.execute(
+                f'''
+                UPDATE
+                    minifac_db.workorder
+                SET
+                    Status = "{process}"
+                WHERE
+                    OrderID = {order_id}
+                ;'''
+            )
+            conn.commit()
+    publish_message([order_id, process, status])
+    return {
+        'status': 'success',
+        'message': 'report successfully',
+    }, 200

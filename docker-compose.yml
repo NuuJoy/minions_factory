@@ -68,6 +68,36 @@ services:
       - mysql_auth
       - accounts_auth
 
+  headassem:
+    image: minifac_workprocpy
+    build:
+      context: ./minifac_workprocpy
+      dockerfile: ./Dockerfile
+    volumes:
+      - ${PWD}/minifac_workprocpy/workprocpy.py:/app/workprocpy.py
+    environment:
+      PROCESS_NAME: HeadAssy
+      PROCESS_CONDS: '[["Create", "Success"], ["HeadAssy", "Rework"], [null, "Scrap"]]'
+      PROCESS_TIME: 1.0
+      PROCESS_YIELD: 60
+      PROCESS_REWORK: 30
+      PROCESS_SCRAP: 10
+
+  bodyassem:
+    image: minifac_workprocpy
+    build:
+      context: ./minifac_workprocpy
+      dockerfile: ./Dockerfile
+    volumes:
+      - ${PWD}/minifac_workprocpy/workprocpy.py:/app/workprocpy.py
+    environment:
+      PROCESS_NAME: BodyAssy
+      PROCESS_CONDS: '[["HeadAssy", "Success"], ["BodyAssy", "Rework"]]'
+      PROCESS_TIME: 1.0
+      PROCESS_YIELD: 60
+      PROCESS_REWORK: 30
+      PROCESS_SCRAP: 10
+
   customer:
     image: minifac_customer
     build:

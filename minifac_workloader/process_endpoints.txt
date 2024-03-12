@@ -1,4 +1,2 @@
 http://headassem:8000/inbox
 http://bodyassem:8000/inbox
-http://armsassem:8000/inbox
-http://legsassem:8000/inbox
